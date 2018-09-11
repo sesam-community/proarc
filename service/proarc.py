@@ -38,13 +38,11 @@ def push(path):
     if isinstance(entity, list):
         return Response("Multiple entities is not supported",status=400, mimetype='text/plain')
 
-    file_url = entity[os.environ.get('file_url')]
-    file_name = entity[os.environ.get('file_name')]
+    download_file(entity[os.environ.get('file_url')], entity[os.environ.get('file_name')])
 
-    download_file(file_url, file_name)
     #removing entities here since they are not part of the soap call and will make the soap call fail
-    del entity[file_url]
-    del entity[file_name]
+    del entity[os.environ.get('file_url')]
+    del entity[os.environ.get('file_name')]
 
     #Continuing on the soap call
     if os.environ.get('transit_decode', 'false').lower() == "true":
