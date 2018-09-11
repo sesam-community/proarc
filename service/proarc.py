@@ -33,10 +33,11 @@ def push(path):
     if path is None:
         return Response("Missing path/method to WS", status=500, mimetype='text/plain')
 
+    entity = request.get_json()
+
     if isinstance(entity, list):
         return Response("Multiple entities is not supported",status=400, mimetype='text/plain')
 
-    entity = request.get_json()
     file_url = entity[os.environ.get('file_url')]
     file_name = entity[os.environ.get('file_name')]
 
