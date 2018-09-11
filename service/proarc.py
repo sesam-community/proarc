@@ -51,7 +51,7 @@ def push(path):
 
     rootlogger.info("Finished creating request: " + str(entity))
 
-    response=do_soap(entity,client)
+    response=do_soap(entity,client, path)
     rootlogger.info("SOAPResponse : \n" + str(response) + "\n----End-Response----")
     return Response("Thanks", mimetype='text/plain')
 
