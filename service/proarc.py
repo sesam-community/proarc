@@ -27,8 +27,14 @@ else:
 
 client = Client(url, transport=transport)
 ##Receiving soap-object
-@app.route('/toproarc', methods=['POST'])
-def push():
+@app.route('/toproarc/<path:path>', methods=['POST'])
+def push(path):
+
+    if path is None:
+        return Response("Missing path/method to WS", status=500, mimetype='text/plain')
+
+    if isinstance(entity, list):
+        return Response("Multiple entities is not supported",status=400, mimetype='text/plain')
 
     entity = request.get_json()
     file_url = entity[os.environ.get('file_url')]
@@ -40,9 +46,6 @@ def push():
     del entity[file_name]
 
     #Continuing on the soap call
-    if isinstance(entity, list):
-        return Response("Multiple entities is not supported",status=400, mimetype='text/plain')
-
     if os.environ.get('transit_decode', 'false').lower() == "true":
         rootlogger.info("transit_decode is set to True.")
         entity = typetransformer.transit_decode(entity)
@@ -65,13 +68,13 @@ def download_file(url, local_filename):
                 #f.flush() commented by recommendation from J.F.Sebastian
     return local_filename
 
-def do_soap(entity, client):
+def do_soap(entity, client, path):
 
     headers = entity['_soapheaders']
     filtered_entity = {i:entity[i] for i in entity if not i.startswith('_') }
     filtered_entity['_soapheaders']=headers
 
-    response = getattr(client.service, os.environ.get('method'))(**filtered_entity)
+    response = getattr(client.service, path)(**filtered_entity)
     return response
 
 if __name__ == '__main__':
