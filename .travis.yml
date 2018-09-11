@@ -1,6 +1,5 @@
 sudo: required
 
-
 language: python
 python:
   -  "3.5"
@@ -11,8 +10,5 @@ services:
 script: true
 
 after_success:
-  - if [ "$TRAVIS_BRANCH" == "master" ]; then
-    docker build -t sesamcommunity/soap-zeep-sink .;
-    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
-    docker push sesamcommunity/soap-zeep-sink:latest;
-    fi
+
+- bash <(curl -s https://raw.githubusercontent.com/sesam-community/guidelines/BaardBouvet-patch-1/after_success.sh)
