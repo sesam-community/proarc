@@ -1,0 +1,18 @@
+sudo: required
+
+
+language: python
+python:
+  -  "3.5"
+
+services:
+  - docker
+
+script: true
+
+after_success:
+  - if [ "$TRAVIS_BRANCH" == "master" ]; then
+    docker build -t sesamcommunity/soap-zeep-sink .;
+    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
+    docker push sesamcommunity/soap-zeep-sink:latest;
+    fi
