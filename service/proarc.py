@@ -64,7 +64,6 @@ def fromproarc(path):
 
     file_id = request.args.get('file_id')
     filename = request.args.get('filename')
-    user_id = request.args.get('user_id')
 
     entity = {
               "_soapheaders": {},
@@ -75,7 +74,7 @@ def fromproarc(path):
                   }
                 }
               },
-              "id": user_id
+              "id": os.environ.get('proarc_user')
             }
 
     # Continuing on the soap call
