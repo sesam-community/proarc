@@ -64,18 +64,19 @@ def fromproarc(path):
 
     file_id = request.args.get('file_id')
     filename = request.args.get('filename')
-    user_id = requests.args.get('user_id')
+    user_id = request.args.get('user_id')
 
     entity = {
-          "files": {
-            "ListItems": {
-              "DownloadFile": {
-                "FileRno": file_id
-              }
+              "_soapheaders": {},
+              "files": {
+                "ListItems": {
+                  "DownloadFile": {
+                    "FileRno": file_id
+                  }
+                }
+              },
+              "id": user_id
             }
-          },
-          "id": user_id
-        }
 
     # Continuing on the soap call
     if os.environ.get('transit_decode', 'false').lower() == "true":
