@@ -26,9 +26,11 @@ else:
     transport = Transport(timeout=timeout)
 
 client = Client(url, transport=transport)
+
+
 ##Receiving soap-object
 @app.route('/toproarc/<path:path>', methods=['POST'])
-def push(path):
+def toproarc(path):
 
     if path is None:
         return Response("Missing path/method to WS", status=500, mimetype='text/plain')
@@ -56,16 +58,56 @@ def push(path):
     return Response("Thanks", mimetype='text/plain')
 
 
-def download_file(url, local_filename):
+##Receiving soap-object
+@app.route('/fromproarc/<path:path>', methods=['GET'])
+def fromproarc(path):
 
-    # NOTE the stream=True parameter
+    file_id = request.args.get('file_id')
+    filename = request.args.get('filename')
+    user_id = requests.args.get('user_id')
+
+    entity = {
+          "files": {
+            "ListItems": {
+              "DownloadFile": {
+                "FileRno": file_id
+              }
+            }
+          },
+          "id": user_id
+        }
+
+    # Continuing on the soap call
+    if os.environ.get('transit_decode', 'false').lower() == "true":
+        rootlogger.info("transit_decode is set to True.")
+        entity = typetransformer.transit_decode(entity)
+
+    rootlogger.info("Finished creating request: " + str(entity))
+
+    response = do_soap(entity, client, path)
+    rootlogger.info("SOAPResponse : \n" + str(response) + "\n----End-Response----")
+    try:
+        filestream = upload_file(filename)
+    except Exception as e:
+        rootlogger.info("  Could not open " + filename + " :%s"% e)
+        return Response(response=("Could not open " + filename + " :%s"% e), status=404)
+
+    return Response(response=filestream, status=200)
+
+
+def download_file(url, local_filename):
     r = requests.get(url, stream=True)
     with open("/fileshare/"+local_filename, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
-                #f.flush() commented by recommendation from J.F.Sebastian
     return local_filename
+
+
+def upload_file(filename):
+    with open("/fileshare/"+filename, 'rb') as f:
+        return f.read()
+
 
 def do_soap(entity, client, path):
 
