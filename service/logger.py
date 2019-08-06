@@ -1,22 +1,28 @@
+"""
+Logging set up
+"""
 import logging
 import sys
 import os
 
-def Logger():
-    #setting loglevel for root
-    rootLogger = logging.getLogger()
+
+def logger():
+    """
+    Setting upp root and zeep logger
+    :return: root logger object
+    """
+    root_logger = logging.getLogger()
     level = logging.getLevelName(os.environ.get('logLevelDefault', 'INFO'))
-    rootLogger.setLevel(level)
+    root_logger.setLevel(level)
 
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(level)
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(level)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    rootLogger.addHandler(ch)
+    stream_handler.setFormatter(formatter)
+    root_logger.addHandler(stream_handler)
 
-    #setting loglevel for zeep package
-    zeepLogger = logging.getLogger('proarc')
+    zeep_logger = logging.getLogger('proarc')
     zeep = logging.getLevelName(os.environ.get('logLevelZeep', 'CRITICAL'))
-    zeepLogger.setLevel(zeep)
+    zeep_logger.setLevel(zeep)
 
-    return rootLogger
+    return root_logger
