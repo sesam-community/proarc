@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from logging import root
 
 import requests
 from flask import Flask, request, Response
@@ -6,12 +7,14 @@ from requests.auth import HTTPBasicAuth  # or HTTPDigestAuth, or OAuth1, etc.
 from zeep import Client
 from zeep.transports import Transport
 import logger
+import logging
 import typetransformer
 import os
 
 rootlogger=logger.Logger()
 
 app = Flask(__name__)
+PORT = int(os.environ.get('PORT', '5000'))
 
 requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += os.environ.get('cipher', ':ECDHE-RSA-AES128-SHA')
 timeout=int(os.environ.get('timeout', '30'))
@@ -118,5 +121,23 @@ def do_soap(entity, client, path):
     response = getattr(client.service, path)(**filtered_entity)
     return response
 
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=os.environ.get('port',5000))
+    if rootlogger.isEnabledFor(logging.DEBUG):
+        app.run(debug=True, host='0.0.0.0', port=PORT)
+    else:
+        import cherrypy
+
+        cherrypy.tree.graft(app, '/')
+        cherrypy.config.update({
+            'environment': 'production',
+            'engine.autoreload_on': True,
+            'log.screen': False,
+            'server.socket_port': PORT,
+            'server.socket_host': '0.0.0.0',
+            'server.thread_pool': 10,
+            'server.max_request_body_size': 0
+        })
+
+        cherrypy.engine.start()
+        cherrypy.engine.block()
