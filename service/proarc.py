@@ -55,7 +55,7 @@ SOAP_CLIENT = get_soap_client()
 @APP.route('/toproarc/<path:path>', methods=['POST'])
 def toproarc(path):
     """
-    Funciton to dosnload file based on data from provided entity and store it in ProArc
+    Function to download file based on data from provided entity and store it in ProArc
     :param path: SOAP method to call see https://proarctest-akersolutions.msappproxy.net/
     FileManager section
     :return: 200 Response if everything is ok
@@ -106,6 +106,8 @@ def fromproarc(path):
                 }
             }
         },
+        # It marked as optional in service definition but will follow to "Required session
+        # object not set" error if omitted.
         "id": os.environ.get('proarc_user')
     }
 
@@ -126,6 +128,31 @@ def fromproarc(path):
         return Response(response=exc_message, status=404)
 
     return Response(response=file_stream, status=200)
+
+
+@APP.route('/<path:path>', methods=["GET"])
+def make_request(path):
+    """
+    This function supports any "plain" requests to ProArc
+    * GetFileInfo?fileRno=<file ref no>
+    * GetFileInfosOnDocument?docRno=<doc ref no>
+    * GetFileLog?fileRno=<filer ref no>
+    :param path: ProArc endpoint
+    :return:
+    """
+    entity = {i: request.args[i] for i in request.args}
+    entity["_soapheaders"] = {}
+    entity["id"] = os.environ.get('proarc_user')
+
+    if os.environ.get('transit_decode', 'false').lower() == "true":
+        LOG.info("transit_decode is set to True.")
+        entity = typetransformer.transit_decode(entity)
+
+    LOG.info(f"Prepared entity: {str(entity)}")
+
+    response = do_soap(entity, SOAP_CLIENT, path)
+    LOG.info(f"SOAPResponse : \n{str(response)}\n----End-Response----")
+    return Response(status=200)
 
 
 def download_file(url, local_filename):
