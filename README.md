@@ -5,6 +5,25 @@ All entities must have a "_soapheaders" attribute.
 
 [![Build Status](https://travis-ci.org/sesam-community/proarc.svg?branch=master)](https://travis-ci.org/sesam-community/proarc)
 
+##### Environment options
+
+* `PORT` - which port this service should run on
+* `url` - URL to ProArc SOAP API
+* `proarc_user` - Proarc user id to be used in SOAP requests
+* `AUTH` - authentication schema to use
+    * empty string - use without authenticaiton
+    * basic - use basic authentication
+* `username` - user name for basic authentication
+* `password` - password for basic authentication
+* `file_url` - input entity attribute that contains URL to file
+that need to be uploaded to Proarc
+* `file_name` - input entity attribute that contains name of file 
+to be uploaded to Proarc
+* `FILE_DOWNLOADER_URL` - URL to CIFS/SMB service (if used) that can download/(upload?)
+files from CIFS share (Proarc stores files on such shares)
+* `PROARC_SHARE_NAME` - Proarc share name 
+* `PROARC_SHARE_PATH` - Proarc path to shared folder (relative to share name)
+
 ##### Example entity
 ```
 {
@@ -28,44 +47,30 @@ All entities must have a "_soapheaders" attribute.
 
 ```
 {
-  "_id": "soap-service",
+  "_id": "proarc-service",
   "type": "system:microservice",
   "docker": {
     "environment": {
-      "method": "createMedarbeiderEntity",
-      "url": "http://localhost:8088/MedarbeiderAdapterV1_1?WSDL",
-      # optional values below
+      "FILE_DOWNLOADER_URL": "http://proarc-file-loader-service:5000",
+      "PROARC_SHARE_NAME": "ProArc",
+      "PROARC_SHARE_PATH": "subfolder1/subfolder2/subfolder3",
       "authentication": "basic",
-      "username": "theUsername",
-      "password": "thePassword",
-      "timeout": 30,
-      "cipher": ":ECDHE-RSA-AES128-SHA",
-      "transit_decode": "false"
+      "file_name": "file_name",
+      "file_url": "file_url",
+      "logLevelDefault": "DEBUG",
+      "password": "$SECRET(password)",
+      "proarc_user": "$ENV(username)",
+      "transit_decode": "true",
+      "url": "http://proarc2tapp.testa.aktest.com/FileManager.svc?wsdl",
+      "username": "$ENV(username)"
     },
-    "image": "sesambuild/soap-zeep-sink:latest",
-    "port": 5001
-  }
+    "hosts": {
+      "proarc.hostname.url": "<proarc IP address>"
+    },
+    "image": "sesamcommunity/proarc",
+    "port": 5000
+  },
+  "verify_ssl": true
 }
-```
-##### Example configuration JWT:
 
-```
-{
-  "_id": "soap-service",
-  "type": "system:microservice",
-  "docker": {
-    "environment": {
-      "method": "createMedarbeiderEntity",
-      "url": "http://localhost:8088/MedarbeiderAdapterV1_1?WSDL",
-      "jwt_secret": "somesecret",
-      "jwt_expiry": "400",
-      "jwt_issuer": "theIssuer",
-      "timeout": 30,
-      "cipher": ":ECDHE-RSA-AES128-SHA",
-      "transit_decode": "true"
-    },
-    "image": "sesambuild/soap-zeep-sink:latest",
-    "port": 5001
-  }
-}
 ```
