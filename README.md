@@ -61,7 +61,7 @@ files from CIFS share (Proarc stores files on such shares)
       "password": "$SECRET(password)",
       "proarc_user": "$ENV(username)",
       "transit_decode": "true",
-      "url": "http://proarc2tapp.testa.aktest.com/FileManager.svc?wsdl",
+      "url": "http://<proarc service URL>/FileManager.svc?wsdl",
       "username": "$ENV(username)"
     },
     "hosts": {
