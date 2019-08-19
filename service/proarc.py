@@ -23,11 +23,40 @@ CIPHER_TO_ADD = os.environ.get('cipher', ':ECDHE-RSA-AES128-SHA')
 urllib3.util.ssl_.DEFAULT_CIPHERS += CIPHER_TO_ADD
 
 TIMEOUT = int(os.environ.get('timeout', '30'))
+"""Proarc API URL"""
 URL = os.environ.get('url', '')
+"""
+Available options:
+- basic
+- empty string (no authentication)
+"""
 AUTH = os.environ.get('authentication', "")
 
+"""
+input entity attribute that contains URL to file
+that need to be uploaded to Proarc
+"""
 FILE_URL_KEY = os.environ.get('file_url')
+"""
+input entity attribute that contains name of file 
+to be uploaded to proarc
+"""
 FILE_NAME_KEY = os.environ.get('file_name')
+"""
+URL to CIFS/SMB service that can download/(upload?)
+files from CIFS share (Proarc stores files on such shares)
+"""
+FILE_DOWNLOADER_URL = os.environ.get('FILE_DOWNLOADER_URL')
+"""
+Proarc share name 
+"""
+PROARC_SHARE_NAME = os.environ.get('PROARC_SHARE_NAME')
+"""
+Proarc path to shared folder (relative to share name)
+"""
+PROARC_SHARE_PATH = os.environ.get('PROARC_SHARE_PATH')
+
+LOG.debug(os.environ)
 
 
 def get_soap_client():
@@ -68,7 +97,7 @@ def toproarc(path):
     if isinstance(entity, list):
         return Response("Multiple entities is not supported", status=400, mimetype='text/plain')
 
-    download_file(entity[os.environ.get('file_url')], entity[os.environ.get('file_name')])
+    download_file(entity[FILE_URL_KEY], entity[FILE_NAME_KEY])
 
     # removing entities here since they are not part of the soap call
     # and will make the soap call fail
@@ -121,7 +150,11 @@ def fromproarc(path):
     response = do_soap(entity, SOAP_CLIENT, path)
     LOG.info(f"SOAPResponse : \n{str(response)}\n----End-Response----")
     try:
-        file_stream = read_file(filename)
+        if FILE_DOWNLOADER_URL:
+            local_file_name = read_file_from_url(filename)
+            file_stream = read_local_file(local_file_name)
+        else:
+            file_stream = read_file(filename)
     except IOError as exc:
         exc_message = f" Could not open {filename}: {exc}"
         LOG.info(exc_message)
@@ -178,6 +211,28 @@ def read_file(filename):
     """
     with open("/fileshare/" + filename, 'rb') as file:
         return file.read()
+
+
+def read_local_file(filename):
+    """
+    Function to read file with given name  from file share
+    :param filename: name of file to be readed
+    :return: file content
+    """
+    with open(filename, 'rb') as file:
+        return file.read()
+
+
+def read_file_from_url(file_name):
+    # NOTE the stream=True parameter below
+    with requests.get(f'{FILE_DOWNLOADER_URL}/get/{PROARC_SHARE_NAME}/{PROARC_SHARE_PATH}', stream=True) as r:
+        r.raise_for_status()
+        with open(file_name, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                if chunk:  # filter out keep-alive new chunks
+                    f.write(chunk)
+                    # f.flush()
+    return file_name
 
 
 def do_soap(entity, client, path):
