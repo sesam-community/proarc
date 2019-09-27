@@ -4,6 +4,7 @@ Pro Arc fetch and push service
 """
 import os
 import logging
+import uuid
 from flask import Flask, request, Response
 import urllib3
 import requests
@@ -126,7 +127,9 @@ def fromproarc(path):
     file_id = request.args.get('file_id')
     filename = request.args.get('filename')
 
-    entity = {
+    LOG.info(f'serving request for file_rno {file_id} and name {filename}')
+
+    soap_entity = {
         "_soapheaders": {},
         "files": {
             "ListItems": {
@@ -140,19 +143,25 @@ def fromproarc(path):
         "id": os.environ.get('proarc_user')
     }
 
-    # Continuing on the soap call
     if os.environ.get('transit_decode', 'false').lower() == "true":
-        LOG.info("transit_decode is set to True.")
-        entity = typetransformer.transit_decode(entity)
+        LOG.debug("transit_decode is set to True.")
+        soap_entity = typetransformer.transit_decode(soap_entity)
 
-    LOG.info(f"Finished creating request: {str(entity)}")
+    LOG.debug(f"Finished creating request: {str(soap_entity)}")
 
-    response = do_soap(entity, SOAP_CLIENT, path)
-    LOG.info(f"SOAPResponse : \n{str(response)}\n----End-Response----")
+    with SOAP_CLIENT.settings(raw_response=True):
+        proarc_response = do_soap(soap_entity, SOAP_CLIENT, path)
+
+    proarc_response.raise_for_status()
+
+    LOG.debug(f"SOAPResponse : \n{str(proarc_response)}\n----End-Response----")
+
     try:
         if FILE_DOWNLOADER_URL:
+            LOG.debug(f"trying to download file {filename} from {FILE_DOWNLOADER_URL}")
             local_file_name = read_file_from_url(filename)
             file_stream = read_local_file(local_file_name)
+            os.remove(local_file_name)
         else:
             file_stream = read_file(filename)
     except IOError as exc:
@@ -225,8 +234,11 @@ def read_local_file(filename):
 
 def read_file_from_url(file_name):
     # NOTE the stream=True parameter below
-    with requests.get(f'{FILE_DOWNLOADER_URL}/get/{PROARC_SHARE_NAME}/{PROARC_SHARE_PATH}', stream=True) as r:
+    file_url = f'{FILE_DOWNLOADER_URL}/get/{PROARC_SHARE_NAME}/{PROARC_SHARE_PATH}/{file_name}'
+    with requests.get(file_url, stream=True) as r:
         r.raise_for_status()
+        # if we have to requests fetching the same file we need to be able to not mix them
+        file_name += f"__{str(uuid.uuid4())}"
         with open(file_name, 'wb') as f:
             for chunk in r.iter_content(chunk_size=8192):
                 if chunk:  # filter out keep-alive new chunks
