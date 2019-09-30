@@ -152,7 +152,14 @@ def fromproarc(path):
     with SOAP_CLIENT.settings(raw_response=True):
         proarc_response = do_soap(soap_entity, SOAP_CLIENT, path)
 
-    proarc_response.raise_for_status()
+    try:
+        proarc_response.raise_for_status()
+    except requests.exceptions.HTTPError as exc:
+        res_text = proarc_response.text
+        LOG.error(f'couldn\'t download {filename} cause {exc}: {res_text}')
+        if 'Document does not exist or you do not have access' in res_text:
+            return Response(response=res_text, status=200)
+        raise exc
 
     LOG.debug(f"SOAPResponse : \n{str(proarc_response)}\n----End-Response----")
 
@@ -166,8 +173,8 @@ def fromproarc(path):
             file_stream = read_file(filename)
     except IOError as exc:
         exc_message = f" Could not open {filename}: {exc}"
-        LOG.info(exc_message)
-        return Response(response=exc_message, status=404)
+        LOG.error(exc_message)
+        return Response(response=exc_message, status=500)
 
     return Response(response=file_stream, status=200)
 
