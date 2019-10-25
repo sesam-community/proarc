@@ -163,18 +163,21 @@ def fromproarc(path):
 
     LOG.debug(f"SOAPResponse : \n{str(proarc_response)}\n----End-Response----")
 
+    local_file_name = None
     try:
         if FILE_DOWNLOADER_URL:
             LOG.debug(f"trying to download file {filename} from {FILE_DOWNLOADER_URL}")
             local_file_name = read_file_from_url(filename)
             file_stream = read_local_file(local_file_name)
-            os.remove(local_file_name)
         else:
             file_stream = read_file(filename)
     except IOError as exc:
         exc_message = f" Could not open {filename}: {exc}"
         LOG.error(exc_message)
         return Response(response=exc_message, status=500)
+    finally:
+        if local_file_name:
+            os.remove(local_file_name)
 
     return Response(response=file_stream, status=200)
 
