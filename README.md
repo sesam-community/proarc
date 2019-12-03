@@ -12,6 +12,7 @@ All entities must have a "_soapheaders" attribute.
 * `proarc_user` - Proarc user id to be used in SOAP requests
 * `AUTH` - authentication schema to use
     * empty string - use without authenticaiton
+    * wssecurity - use Web Services Security
     * basic - use basic authentication
 * `username` - user name for basic authentication
 * `password` - password for basic authentication

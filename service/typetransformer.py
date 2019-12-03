@@ -20,7 +20,7 @@ def transit_decode_datetime(val):
 
 
 def decode_date(val):
-    if len(val) is 11:
+    if len(val) == 11:
         return datetime.datetime.strptime(val, '$%Y-%m-%d').date()
     else:
         return datetime.datetime.strptime(val, '$%Y-%m-%dT%H:%M:%S.%fZ')
