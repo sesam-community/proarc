@@ -65,17 +65,22 @@ def get_soap_client():
     function to build and return SOAP client
     :return: zeep soap client object
     """
+    username = os.environ.get('username')
+    password = os.environ.get('password')
+
+    LOG.info(f"using {AUTH if AUTH else 'without'} authentication")
+
     if AUTH.lower() == "basic":
-        username = os.environ.get('username')
-        password = os.environ.get('password')
-        LOG.info("Using authentication")
         session = Session()
         session.auth = HTTPBasicAuth(username, password)
         transport = Transport(session=session, timeout=TIMEOUT)
-    else:
-        LOG.info("Skipping authentication")
-        transport = Transport(timeout=TIMEOUT)
+        return Client(URL, transport=transport)
 
+    if AUTH.lower() == "wssecurity":
+        from zeep.wsse.username import UsernameToken
+        return Client(URL, wsse=UsernameToken(username, password), transport=Transport(timeout=TIMEOUT))
+
+    transport = Transport(timeout=TIMEOUT)
     return Client(URL, transport=transport)
 
 
