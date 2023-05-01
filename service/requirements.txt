@@ -1,4 +1,4 @@
-Flask==1.1.1
+Flask==2.3.2
 zeep==3.4.0
 CherryPy==18.2.0
 requests==2.22.0
